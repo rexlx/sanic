@@ -49,7 +49,7 @@ func main() {
 		}
 		hostCfg := HostConfig{
 			Domain:    "sanic",
-			IP:        "0.0.0.0",
+			IP:        "127.0.0.1",
 			Port:      port,
 			SubDomain: route,
 		}
