@@ -19,58 +19,51 @@ type Application struct {
 	Visits    int                  `json:"visits"`
 }
 
+type Site struct {
+	Name string
+	UI   UIConfig
+}
+
 func main() {
-	routes := []string{"", "about", "contact", "index", "blog"}
 	newLog := log.New(os.Stdout, "app: ", log.LstdFlags)
+
 	app := &Application{
 		Log:       newLog,
-		Domain:    "sanic",
+		Domain:    "rxlx.us",
 		Instances: make(map[string]*Instance),
 	}
 
 	for _, route := range routes {
-		app.Log.Println("Adding route", route)
-		style := BasicStyle{
-			BodyBG:   "#f5f5f5",
-			BodyText: "#333",
-			H1:       "#444",
-			Btn:      "#becdc3",
-			BtnText:  "#000",
-		}
-		templates := []Template{
-			{
-				Name: "index",
-				Body: splashPage,
-			},
-		}
-		uiCfg := UIConfig{
-			Style:     style,
-			Templates: templates,
-		}
+		app.Log.Println("Adding route", route.Name)
+
 		hostCfg := HostConfig{
-			Domain:    "sanic",
+			Domain:    app.Domain,
 			IP:        "127.0.0.1",
 			Port:      port,
-			SubDomain: route,
+			SubDomain: route.Name,
 		}
 		port++
-		instance := NewInstance(hostCfg, uiCfg)
-		instance.ID = route
-		instance.Domain = app.Domain
+
+		instance := NewInstance(hostCfg, route.UI)
+		instance.ID = route.Name
+		// TODO: need way to handle dynamic routes
 		instance.Server.HandleFunc("/", instance.RootHandler)
 		instance.Server.HandleFunc("/runtime", instance.GetRuntimeStats)
 		instance.Server.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, "mycon")
 		})
-		app.AddInstance(route, instance)
+
+		app.AddInstance(route.Name, instance)
 		go instance.Start()
 
 	}
+
 	app.Log.Println("Starting main server")
 	app.Server = &http.Server{
 		Addr:    ":8080",
 		Handler: app,
 	}
+
 	app.Server.ListenAndServe()
 }
 
@@ -80,7 +73,11 @@ func (a *Application) AddInstance(path string, instance *Instance) {
 
 func (a *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	path := strings.TrimLeft(r.URL.Path, "/")
-	subDomain := a.tidyDomain(strings.Split(r.Host, "."))
+	subDomain, err := a.tidyDomain(strings.Split(r.Host, "."))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	a.Log.Println("got request from", r.RemoteAddr, "for", path)
 
 	if len(subDomain) != 1 {
@@ -133,13 +130,17 @@ func (a *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
-func (a *Application) tidyDomain(domain []string) []string {
+func (a *Application) tidyDomain(domain []string) ([]string, error) {
 	out := make([]string, 0)
+	parts := strings.Split(a.Domain, ".")
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("Domain is not valid")
+	}
 	for _, part := range domain {
-		if strings.Contains(part, ":") || part == a.Domain {
+		if strings.Contains(part, ":") || part == parts[0] {
 			continue
 		}
 		out = append(out, part)
 	}
-	return out
+	return out, nil
 }

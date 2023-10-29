@@ -84,7 +84,7 @@ func (i *Instance) GetStats() RuntimeStats {
 
 func (i *Instance) RootHandler(w http.ResponseWriter, r *http.Request) {
 	name := "index"
-	url := fmt.Sprintf("http://%v.%v.com:%d", i.SubDomain, i.Domain, 8080)
+	url := fmt.Sprintf("http://%v.%v:%d", i.SubDomain, i.Domain, 8080)
 	var tmpl string
 	for _, t := range i.Templates {
 		if t.Name == name {
@@ -158,6 +158,7 @@ func NewInstance(hostCfg HostConfig, uiCfg UIConfig) *Instance {
 	return &Instance{
 		Log:         newLog,
 		SubDomain:   hostCfg.SubDomain,
+		Domain:      hostCfg.Domain,
 		IP:          hostCfg.IP,
 		URL:         urlString,
 		Port:        hostCfg.Port,
