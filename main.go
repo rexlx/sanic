@@ -24,6 +24,7 @@ func main() {
 	newLog := log.New(os.Stdout, "app: ", log.LstdFlags)
 	app := &Application{
 		Log:       newLog,
+		Domain:    "sanic",
 		Instances: make(map[string]*Instance),
 	}
 
@@ -47,7 +48,7 @@ func main() {
 			Templates: templates,
 		}
 		hostCfg := HostConfig{
-			Domain:    "rxlx.us",
+			Domain:    "sanic",
 			IP:        "0.0.0.0",
 			Port:      port,
 			SubDomain: route,
@@ -55,6 +56,7 @@ func main() {
 		port++
 		instance := NewInstance(hostCfg, uiCfg)
 		instance.ID = route
+		instance.Domain = app.Domain
 		instance.Server.HandleFunc("/", instance.RootHandler)
 		instance.Server.HandleFunc("/runtime", instance.GetRuntimeStats)
 		instance.Server.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
@@ -79,14 +81,12 @@ func (a *Application) AddInstance(path string, instance *Instance) {
 func (a *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	path := strings.TrimLeft(r.URL.Path, "/")
 	subDomain := a.tidyDomain(strings.Split(r.Host, "."))
+	a.Log.Println("got request from", r.RemoteAddr, "for", path)
 
 	if len(subDomain) != 1 {
-		http.Error(w, fmt.Sprintf("Not Found %v", r.Host), http.StatusNotFound)
+		http.Error(w, fmt.Sprintf("(%v)\tNot Found %v", len(subDomain), r.Host), http.StatusNotFound)
 		return
 	}
-
-	a.Log.Println("got request from", r.RemoteAddr, "for", path)
-	// a.Log.Println("domain parts", subDomain, len(subDomain))
 
 	svc, ok := a.Instances[subDomain[0]]
 	if !ok {
@@ -143,9 +143,3 @@ func (a *Application) tidyDomain(domain []string) []string {
 	}
 	return out
 }
-
-// func NewRouter() {
-// 	svr := http.NewServeMux()
-// 	svr.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-
-// }

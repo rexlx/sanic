@@ -15,6 +15,7 @@ type Instance struct {
 	Style       BasicStyle     `json:"style"`
 	Templates   []Template     `json:"templates"`
 	SubDomain   string         `json:"subdomain"`
+	Domain      string         `json:"domain"`
 	IP          string         `json:"ip"`
 	Port        int            `json:"port"`
 	URL         string         `json:"url"`
@@ -83,7 +84,7 @@ func (i *Instance) GetStats() RuntimeStats {
 
 func (i *Instance) RootHandler(w http.ResponseWriter, r *http.Request) {
 	name := "index"
-	url := fmt.Sprintf("http://%v.%v:%d", i.SubDomain, "localhost", 8080)
+	url := fmt.Sprintf("http://%v.%v.com:%d", i.SubDomain, i.Domain, 8080)
 	var tmpl string
 	for _, t := range i.Templates {
 		if t.Name == name {
