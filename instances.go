@@ -83,6 +83,8 @@ func (i *Instance) GetStats() RuntimeStats {
 }
 
 func (i *Instance) RootHandler(w http.ResponseWriter, r *http.Request) {
+	i.Log.Println(i.ID, "Root handler called")
+	fmt.Println("Root handler called")
 	name := "index"
 	url := fmt.Sprintf("http://%v.%v:%d", i.SubDomain, i.Domain, 8080)
 	var tmpl string
@@ -142,18 +144,13 @@ func (i *Instance) AddHandler(path string, handler http.HandlerFunc) {
 }
 
 func NewInstance(hostCfg HostConfig, uiCfg UIConfig) *Instance {
-	newLog := log.New(os.Stdout, fmt.Sprintf("%s.%s >", hostCfg.SubDomain, hostCfg.Domain), log.LstdFlags)
+	newLog := log.New(os.Stdout, fmt.Sprintf("%s.%s -> ", hostCfg.SubDomain, hostCfg.Domain), log.LstdFlags)
 	urlString := fmt.Sprintf("http://%s.%s:%d", hostCfg.SubDomain, hostCfg.Domain, hostCfg.Port)
 	errs := make([]string, 0)
 	mx := &sync.RWMutex{}
 	killChan := make(chan bool)
 	messageChan := make(chan SmallTalk)
 	svr := http.NewServeMux()
-
-	// newHTTPFromMux := &http.Server{
-	// 	Addr:    fmt.Sprintf(":%d", hostCfg.Port),
-	// 	Handler: svr,
-	// }
 
 	return &Instance{
 		Log:         newLog,

@@ -1,8 +1,20 @@
 package main
 
+var defaultHandlers = []Handler{
+	{
+		Name: "/favicon.ico",
+		Func: FaviconHandler,
+	},
+	{
+		Name: "/extra",
+		Func: AdditionalHandler,
+	},
+}
+
 var routes = []Site{
 	{
-		Name: "about",
+		Handlers: defaultHandlers,
+		Name:     "about",
 		UI: UIConfig{
 			Style: BasicStyle{
 				BodyBG:   "#f5f5f5",
@@ -20,7 +32,8 @@ var routes = []Site{
 		},
 	},
 	{
-		Name: "contact",
+		Handlers: defaultHandlers,
+		Name:     "contact",
 		UI: UIConfig{
 			Style: BasicStyle{
 				BodyBG:   "#f5f5f5",
@@ -38,7 +51,8 @@ var routes = []Site{
 		},
 	},
 	{
-		Name: "blog",
+		Handlers: defaultHandlers,
+		Name:     "blog",
 		UI: UIConfig{
 			Style: BasicStyle{
 				BodyBG:   "#828599",
@@ -56,7 +70,8 @@ var routes = []Site{
 		},
 	},
 	{
-		Name: "news",
+		Handlers: defaultHandlers,
+		Name:     "news",
 		UI: UIConfig{
 			Style: BasicStyle{
 				BodyBG:   "#333",

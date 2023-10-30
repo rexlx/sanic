@@ -13,6 +13,7 @@ var port int = 6666
 
 type Application struct {
 	Domain    string               `json:"domain"`
+	Port      int                  `json:"port"`
 	Log       *log.Logger          `json:"-"`
 	Instances map[string]*Instance `json:"instances"`
 	Server    *http.Server         `json:"-"`
@@ -20,8 +21,14 @@ type Application struct {
 }
 
 type Site struct {
+	Name     string
+	UI       UIConfig
+	Handlers []Handler
+}
+
+type Handler struct {
 	Name string
-	UI   UIConfig
+	Func func(http.ResponseWriter, *http.Request)
 }
 
 func main() {
@@ -29,6 +36,7 @@ func main() {
 
 	app := &Application{
 		Log:       newLog,
+		Port:      8080,
 		Domain:    "rxlx.us",
 		Instances: make(map[string]*Instance),
 	}
@@ -46,12 +54,12 @@ func main() {
 
 		instance := NewInstance(hostCfg, route.UI)
 		instance.ID = route.Name
+		for _, handler := range route.Handlers {
+			instance.AddHandler(handler.Name, handler.Func)
+		}
 		// TODO: need way to handle dynamic routes
 		instance.Server.HandleFunc("/", instance.RootHandler)
 		instance.Server.HandleFunc("/runtime", instance.GetRuntimeStats)
-		instance.Server.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
-			fmt.Fprintf(w, "mycon")
-		})
 
 		app.AddInstance(route.Name, instance)
 		go instance.Start()
@@ -60,7 +68,7 @@ func main() {
 
 	app.Log.Println("Starting main server")
 	app.Server = &http.Server{
-		Addr:    ":8080",
+		Addr:    fmt.Sprintf(":%d", app.Port),
 		Handler: app,
 	}
 
