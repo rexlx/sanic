@@ -21,9 +21,10 @@ type Application struct {
 }
 
 type Site struct {
-	Name     string
-	UI       UIConfig
-	Handlers []Handler
+	Name      string
+	UI        UIConfig
+	Handlers  []Handler
+	ServePath string
 }
 
 type Handler struct {
@@ -54,12 +55,19 @@ func main() {
 
 		instance := NewInstance(hostCfg, route.UI)
 		instance.ID = route.Name
+		instance.Server.HandleFunc("/home", instance.RootHandler)
+		instance.Server.HandleFunc("/runtime", instance.GetRuntimeStats)
+		if route.ServePath != "" {
+			h, err := NewUIServer(route.ServePath)
+			if err != nil {
+				app.Log.Println("Error creating UI server", err)
+				continue
+			}
+			instance.Server.HandleFunc("/", *h)
+		}
 		for _, handler := range route.Handlers {
 			instance.AddHandler(handler.Name, handler.Func)
 		}
-		// TODO: need way to handle dynamic routes
-		instance.Server.HandleFunc("/", instance.RootHandler)
-		instance.Server.HandleFunc("/runtime", instance.GetRuntimeStats)
 
 		app.AddInstance(route.Name, instance)
 		go instance.Start()

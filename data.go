@@ -32,8 +32,9 @@ var routes = []Site{
 		},
 	},
 	{
-		Handlers: defaultHandlers,
-		Name:     "contact",
+		Handlers:  defaultHandlers,
+		ServePath: "/Users/rxlx/ui/",
+		Name:      "contact",
 		UI: UIConfig{
 			Style: BasicStyle{
 				BodyBG:   "#f5f5f5",
