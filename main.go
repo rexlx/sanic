@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -43,7 +42,7 @@ func main() {
 	}
 
 	for _, route := range routes {
-		app.Log.Println("Adding route", route.Name)
+		app.Log.Println("Adding route", route.Name, route.ServePath)
 
 		hostCfg := HostConfig{
 			Domain:    app.Domain,
@@ -58,13 +57,16 @@ func main() {
 		instance.Server.HandleFunc("/home", instance.RootHandler)
 		instance.Server.HandleFunc("/runtime", instance.GetRuntimeStats)
 		if route.ServePath != "" {
-			h, err := NewUIServer(route.ServePath)
+			err := checkPath(route.ServePath)
 			if err != nil {
-				app.Log.Println("Error creating UI server", err)
+				app.Log.Println("Error checking path", err)
 				continue
 			}
-			instance.Server.HandleFunc("/", *h)
 		}
+		instance.ServePath = route.ServePath
+		fs := http.FileServer(http.Dir(instance.ServePath))
+		instance.Server.Handle("/", fs)
+
 		for _, handler := range route.Handlers {
 			instance.AddHandler(handler.Name, handler.Func)
 		}
@@ -106,51 +108,54 @@ func (a *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not Found", http.StatusNotFound)
 		return
 	}
+	r.Host = "localhost"
 
-	url := fmt.Sprintf("http://localhost:%d/%v", svc.Port, path)
+	svc.Server.ServeHTTP(w, r)
 
-	a.Log.Println("forwarding request to", url)
+	// url := fmt.Sprintf("http://localhost:%d/%v", svc.Port, path)
 
-	req, err := http.NewRequest(r.Method, url, r.Body)
-	// req, err := http.NewRequest(r.Method, svc.URL, r.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	// a.Log.Println("forwarding request to", url)
 
-	req.Header = r.Header
-	req.Header.Set("X-Forwarded-For", r.RemoteAddr)
-	req.Header.Set("X-Forwarded-Host", r.Host)
+	// req, err := http.NewRequest(r.Method, url, r.Body)
+	// // req, err := http.NewRequest(r.Method, svc.URL, r.Body)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusBadRequest)
+	// 	return
+	// }
 
-	client := &http.Client{}
-	a.Log.Println("making a client and performing request")
+	// req.Header = r.Header
+	// req.Header.Set("X-Forwarded-For", r.RemoteAddr)
+	// req.Header.Set("X-Forwarded-Host", r.Host)
 
-	resp, err := client.Do(req)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer resp.Body.Close()
+	// client := &http.Client{}
+	// a.Log.Println("making a client and performing request")
 
-	for k, v := range resp.Header {
-		w.Header().Set(k, v[0])
-	}
+	// resp, err := client.Do(req)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
+	// defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	// for k, v := range resp.Header {
+	// 	w.Header().Set(k, v[0])
+	// }
 
-	w.WriteHeader(resp.StatusCode)
-	w.Write(body)
+	// body, err := io.ReadAll(resp.Body)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
+
+	// w.WriteHeader(resp.StatusCode)
+	// w.Write(body)
 }
 
 func (a *Application) tidyDomain(domain []string) ([]string, error) {
 	out := make([]string, 0)
 	parts := strings.Split(a.Domain, ".")
 	if len(parts) != 2 {
-		return nil, fmt.Errorf("Domain is not valid")
+		return nil, fmt.Errorf("domain is not valid")
 	}
 	for _, part := range domain {
 		if strings.Contains(part, ":") || part == parts[0] {
@@ -159,4 +164,14 @@ func (a *Application) tidyDomain(domain []string) ([]string, error) {
 		out = append(out, part)
 	}
 	return out, nil
+}
+
+func checkPath(path string) error {
+	if path == "" {
+		return fmt.Errorf("path cannot be empty")
+	}
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return fmt.Errorf("path %v does not exist", path)
+	}
+	return nil
 }

@@ -31,7 +31,20 @@ func NewUIServer(path string) (*http.HandlerFunc, error) {
 	}
 
 	f = func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/javascript")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "*")
 		http.ServeFile(w, r, path)
+		fmt.Println("served file", w.Header().Get("Content-Type"))
 	}
 	return &f, nil
+}
+
+func CorsHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("cors handler called")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "*")
+		next.ServeHTTP(w, r)
+	})
 }

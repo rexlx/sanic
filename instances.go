@@ -12,6 +12,7 @@ import (
 type Instance struct {
 	Log         *log.Logger    `json:"-"`
 	ID          string         `json:"id"`
+	ServePath   string         `json:"serve_path"`
 	Style       BasicStyle     `json:"style"`
 	Templates   []Template     `json:"templates"`
 	SubDomain   string         `json:"subdomain"`
