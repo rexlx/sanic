@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -109,47 +108,47 @@ func (a *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not Found", http.StatusNotFound)
 		return
 	}
-	// r.Host = "localhost"
+	r.Host = "localhost"
 
-	// svc.Server.ServeHTTP(w, r)
+	svc.Server.ServeHTTP(w, r)
 
-	url := fmt.Sprintf("http://localhost:%d/%v", svc.Port, path)
+	// url := fmt.Sprintf("http://localhost:%d/%v", svc.Port, path)
 
-	a.Log.Println("forwarding request to", url)
+	// a.Log.Println("forwarding request to", url)
 
-	req, err := http.NewRequest(r.Method, url, r.Body)
-	// req, err := http.NewRequest(r.Method, svc.URL, r.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	// req, err := http.NewRequest(r.Method, url, r.Body)
+	// // req, err := http.NewRequest(r.Method, svc.URL, r.Body)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusBadRequest)
+	// 	return
+	// }
 
-	req.Header = r.Header
-	req.Header.Set("X-Forwarded-For", r.RemoteAddr)
-	req.Header.Set("X-Forwarded-Host", r.Host)
+	// req.Header = r.Header
+	// req.Header.Set("X-Forwarded-For", r.RemoteAddr)
+	// req.Header.Set("X-Forwarded-Host", r.Host)
 
-	client := &http.Client{}
-	a.Log.Println("making a client and performing request")
+	// client := &http.Client{}
+	// a.Log.Println("making a client and performing request")
 
-	resp, err := client.Do(req)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer resp.Body.Close()
+	// resp, err := client.Do(req)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
+	// defer resp.Body.Close()
 
-	for k, v := range resp.Header {
-		w.Header().Set(k, v[0])
-	}
+	// for k, v := range resp.Header {
+	// 	w.Header().Set(k, v[0])
+	// }
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	// body, err := io.ReadAll(resp.Body)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
 
-	w.WriteHeader(resp.StatusCode)
-	w.Write(body)
+	// w.WriteHeader(resp.StatusCode)
+	// w.Write(body)
 }
 
 func (a *Application) tidyDomain(domain []string) ([]string, error) {

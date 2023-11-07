@@ -15,11 +15,7 @@ func FaviconHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "mycon")
 }
 
-func UIServer(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "ui server")
-
-}
-
+// i was using this to serve the ui, but it's not needed. might come back for the cors stuff
 func NewUIServer(path string) (*http.HandlerFunc, error) {
 	var f http.HandlerFunc
 
