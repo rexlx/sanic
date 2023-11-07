@@ -1,16 +1,5 @@
 package main
 
-var defaultHandlers = []Handler{
-	{
-		Name: "/favicon.ico",
-		Func: FaviconHandler,
-	},
-	{
-		Name: "/extra",
-		Func: AdditionalHandler,
-	},
-}
-
 var routes = []Site{
 	{
 		Handlers: defaultHandlers,
