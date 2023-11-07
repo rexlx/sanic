@@ -6,6 +6,17 @@ import (
 	"os"
 )
 
+var defaultHandlers = []Handler{
+	{
+		Name: "/favicon.ico",
+		Func: FaviconHandler,
+	},
+	{
+		Name: "/extra",
+		Func: AdditionalHandler,
+	},
+}
+
 func AdditionalHandler(w http.ResponseWriter, r *http.Request) {
 	out := `<p><em>wow</em>, look at you</p>`
 	fmt.Fprintf(w, out)
