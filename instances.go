@@ -87,7 +87,7 @@ func (i *Instance) RootHandler(w http.ResponseWriter, r *http.Request) {
 	i.Log.Println(i.ID, "Root handler called")
 	fmt.Println("Root handler called")
 	name := "index"
-	url := fmt.Sprintf("http://%v.%v:%d", i.SubDomain, i.Domain, 8080)
+	url := fmt.Sprintf("https://%v.%v:%d", i.SubDomain, i.Domain, 8080)
 	var tmpl string
 	for _, t := range i.Templates {
 		if t.Name == name {

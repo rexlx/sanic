@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/tls"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -8,9 +10,15 @@ import (
 	"strings"
 )
 
-var port int = 6666
+var (
+	port        = flag.Int("port", 6666, "port to start on")
+	exposedPort = flag.Int("exposedPort", 8080, "port to expose")
+	cert        = flag.String("cert", "cert.pem", "path to cert")
+	key         = flag.String("key", "key.pem", "path to key")
+)
 
 type Application struct {
+	TLSConfig *tls.Config          `json:"-"`
 	Domain    string               `json:"domain"`
 	Port      int                  `json:"port"`
 	Log       *log.Logger          `json:"-"`
@@ -32,9 +40,17 @@ type Handler struct {
 }
 
 func main() {
+	flag.Parse()
 	newLog := log.New(os.Stdout, "app: ", log.LstdFlags)
+	cert, err := tls.LoadX509KeyPair(*cert, *key)
+	if err != nil {
+		newLog.Fatalln("Error loading cert", err)
+	}
 
 	app := &Application{
+		TLSConfig: &tls.Config{
+			Certificates: []tls.Certificate{cert},
+		},
 		Log:       newLog,
 		Port:      8080,
 		Domain:    "rxlx.us",
@@ -47,10 +63,10 @@ func main() {
 		hostCfg := HostConfig{
 			Domain:    app.Domain,
 			IP:        "0.0.0.0",
-			Port:      port,
+			Port:      *port,
 			SubDomain: route.Name,
 		}
-		port++
+		*port++
 
 		instance := NewInstance(hostCfg, route.UI)
 		instance.ID = route.Name
@@ -78,11 +94,13 @@ func main() {
 
 	app.Log.Println("Starting main server")
 	app.Server = &http.Server{
-		Addr:    fmt.Sprintf(":%d", app.Port),
-		Handler: app,
+		TLSConfig: app.TLSConfig,
+		Addr:      fmt.Sprintf(":%d", app.Port),
+		Handler:   app,
 	}
 
-	app.Server.ListenAndServe()
+	// app.Server.ListenAndServe()
+	app.Server.ListenAndServeTLS("", "")
 }
 
 func (a *Application) AddInstance(path string, instance *Instance) {
@@ -112,43 +130,6 @@ func (a *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	svc.Server.ServeHTTP(w, r)
 
-	// url := fmt.Sprintf("http://localhost:%d/%v", svc.Port, path)
-
-	// a.Log.Println("forwarding request to", url)
-
-	// req, err := http.NewRequest(r.Method, url, r.Body)
-	// // req, err := http.NewRequest(r.Method, svc.URL, r.Body)
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusBadRequest)
-	// 	return
-	// }
-
-	// req.Header = r.Header
-	// req.Header.Set("X-Forwarded-For", r.RemoteAddr)
-	// req.Header.Set("X-Forwarded-Host", r.Host)
-
-	// client := &http.Client{}
-	// a.Log.Println("making a client and performing request")
-
-	// resp, err := client.Do(req)
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-	// 	return
-	// }
-	// defer resp.Body.Close()
-
-	// for k, v := range resp.Header {
-	// 	w.Header().Set(k, v[0])
-	// }
-
-	// body, err := io.ReadAll(resp.Body)
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-	// 	return
-	// }
-
-	// w.WriteHeader(resp.StatusCode)
-	// w.Write(body)
 }
 
 func (a *Application) tidyDomain(domain []string) ([]string, error) {
